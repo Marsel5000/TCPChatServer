@@ -7,7 +7,7 @@ import java.net.Socket;
 import java.util.LinkedList;
 import java.util.concurrent.*;
 
-public final class ServerFormUI{
+public final class Server {
     private static final LinkedList<String> names = new LinkedList<>();
     private static final LinkedList<ThreadClient> sockets = new LinkedList<>();
     private static final StringBuilder historyChat = new StringBuilder( );

@@ -24,8 +24,8 @@ public class ThreadClient implements Runnable {
     }
 
     boolean getName() {
-        if (ServerFormUI.getStrings().contains(name)) return false;
-        ServerFormUI.addStrings(name);
+        if (Server.getStrings().contains(name)) return false;
+        Server.addStrings(name);
         return true;
     }
 
@@ -45,12 +45,12 @@ public class ThreadClient implements Runnable {
                     name = entry;
                     if (getName()) {
                         entry = "<name>ACCESS GRANTED\n<end>";
-                        outputStream.writeUTF(ServerFormUI.getHistoryChat().toString());
+                        outputStream.writeUTF(Server.getHistoryChat().toString());
                         outputStream.flush();
-                        for (ThreadClient threadClient : ServerFormUI.getSockets()) {
+                        for (ThreadClient threadClient : Server.getSockets()) {
                             threadClient.write("The client under the nickname " + name + " has joined the chat\n");
                         }
-                        ServerFormUI.addSockets(this);
+                        Server.addSockets(this);
                     } else {
                         entry = "<name>ACCESS DENIED\n<end>";
                         name = "Entry other name";
@@ -64,8 +64,8 @@ public class ThreadClient implements Runnable {
                     entry = entry.replace("<end>", "");
                 }
                 entry = formatter.format(date) + " " + name + ": " + entry + "\n";
-                ServerFormUI.appendHistoryChat(entry);
-                for (ThreadClient threadClient : ServerFormUI.getSockets()) {
+                Server.appendHistoryChat(entry);
+                for (ThreadClient threadClient : Server.getSockets()) {
                     threadClient.write(entry);
                 }
             }
@@ -73,9 +73,9 @@ public class ThreadClient implements Runnable {
             outputStream.close();
             client.close();
         } catch (IOException exception) {
-            ServerFormUI.removeClient(this);
-            ServerFormUI.removeName(name);
-            for (ThreadClient threadClient : ServerFormUI.getSockets()) {
+            Server.removeClient(this);
+            Server.removeName(name);
+            for (ThreadClient threadClient : Server.getSockets()) {
                 threadClient.write("The client under the nickname " + name + " left the chat\n");
             }
         }
