@@ -1,76 +1,74 @@
 package com.marsel;
 
-import javax.swing.*;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.*;
 
 public final class Server {
-    private static final LinkedList<String> names = new LinkedList<>();
-    private static final LinkedList<ThreadClient> sockets = new LinkedList<>();
-    private static final StringBuilder historyChat = new StringBuilder( );
+    private static final int PORT = 80;
+    private static final String FILE_NAME = "HistoryOfChat.txt";
+    private static List<String> names = new LinkedList<>();
+    private static List<ThreadClient> sockets = new LinkedList<>();
+    private static StringBuilder historyOfChat = new StringBuilder( );
 
     synchronized public static StringBuilder getHistoryChat( ) {
-        return historyChat;
+        return historyOfChat;
     }
-    synchronized public static void appendHistoryChat(String message) throws IOException {
-        message = message.replace("<start>", "");
-        message = message.replace("<name>", "");
-        message = message.replace("<end>", "");
-        historyChat.append(message);
-        FileWriter fileWriter = new FileWriter("Test.txt", true);
-        fileWriter.write( message );
-        fileWriter.flush();
-        fileWriter.close();
+
+    synchronized public static void appendHistoryChat(String message) {
+        historyOfChat.append(message);
+        try (FileWriter fileWriter = new FileWriter(FILE_NAME, true)){
+            fileWriter.write( message );
+            fileWriter.flush();
+        } catch (IOException e){
+            e.printStackTrace();
+        }
     }
-    synchronized public static LinkedList<ThreadClient> getSockets( ) {
+
+    synchronized public static List<ThreadClient> getSockets() {
         return sockets;
     }
+
     synchronized public static void addSockets(ThreadClient client){
         sockets.add(client);
     }
+
     synchronized public static void removeClient(ThreadClient client ){
         sockets.remove(client);
     }
-    synchronized public static LinkedList<String> getStrings(){
+
+    synchronized public static List<String> getStrings(){
         return names;
     }
-    synchronized public static void addStrings( String name ){
+
+    synchronized public static void addStrings(String name){
         names.add( name );
     }
-    synchronized public static void removeName(String name ){
+
+    synchronized public static void removeName(String name){
         names.remove(name);
     }
 
     public static void main(String[] args){
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                LinkedList<ThreadClient> sockets = new LinkedList<>();
-                File file = new File( "Test.txt" );
-                try (ServerSocket server = new ServerSocket( 80 )){
-                    file.createNewFile();
-                    BufferedReader bufferedReader = new BufferedReader(new FileReader("Test.txt" ));
-                    String line;
-                    while ((line = bufferedReader.readLine()) != null) {
-                        historyChat.append(line).append("\n");
-                    }
-                    bufferedReader.close();
-
-                    ThreadPoolExecutor executor = new ThreadPoolExecutor(100, 100, 60,
-                            TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
-                    while (true) {
-                        Socket client = null;
-                        client = server.accept();
-                        ThreadClient threadClient = new ThreadClient( client );
-                        executor.execute(threadClient);
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+        File file = new File( FILE_NAME );
+        try (ServerSocket server = new ServerSocket( PORT );
+             BufferedReader bufferedReader = new BufferedReader(new FileReader( FILE_NAME ))){
+            file.createNewFile();
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                historyOfChat.append(line).append("\n");
             }
-        });
+            ThreadPoolExecutor executor = new ThreadPoolExecutor(100, 100, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<>(100));
+             while (true) {
+                ThreadClient threadClient = new ThreadClient(server.accept());
+                executor.execute(threadClient);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
 
